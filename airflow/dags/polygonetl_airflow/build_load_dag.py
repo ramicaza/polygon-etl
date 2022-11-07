@@ -276,7 +276,7 @@ def build_load_dag(
     load_contracts_task = add_load_tasks('contracts', 'json')
     load_tokens_task = add_load_tasks('tokens', 'csv', allow_quoted_newlines=True)
     load_token_transfers_task = add_load_tasks('token_transfers', 'csv')
-    load_traces_task = add_load_tasks('traces', 'csv')
+    # load_traces_task = add_load_tasks('traces', 'csv')
 
     enrich_blocks_task = add_enrich_tasks(
         'blocks', time_partitioning_field='timestamp', dependencies=[load_blocks_task])
@@ -286,8 +286,8 @@ def build_load_dag(
         'logs', dependencies=[load_blocks_task, load_logs_task])
     enrich_token_transfers_task = add_enrich_tasks(
         'token_transfers', dependencies=[load_blocks_task, load_token_transfers_task])
-    enrich_traces_task = add_enrich_tasks(
-        'traces', dependencies=[load_blocks_task, load_traces_task])
+    # enrich_traces_task = add_enrich_tasks(
+    #     'traces', dependencies=[load_blocks_task, load_traces_task])
     enrich_contracts_task = add_enrich_tasks(
         'contracts', dependencies=[load_blocks_task, load_contracts_task])
     enrich_tokens_task = add_enrich_tasks(
@@ -316,7 +316,7 @@ def build_load_dag(
         verify_transactions_have_latest_task,
         verify_logs_have_latest_task,
         verify_token_transfers_have_latest_task,
-        enrich_traces_task,
+        # enrich_traces_task,
         enrich_contracts_task,
         enrich_tokens_task,
     ])
