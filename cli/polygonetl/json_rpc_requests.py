@@ -58,11 +58,11 @@ def generate_get_block_receipts_json_rpc(block_numbers):
         )
 
 
-def generate_get_code_json_rpc(contract_addresses, block='latest'):
-    for idx, contract_address in enumerate(contract_addresses):
+def generate_get_code_json_rpc(receipts, block='latest'):
+    for idx, receipt in enumerate(receipts):
         yield generate_json_rpc(
             method='eth_getCode',
-            params=[contract_address, hex(block) if isinstance(block, int) else block],
+            params=[receipt['contract_address'], hex(block) if isinstance(block, int) else block],
             request_id=idx
         )
 

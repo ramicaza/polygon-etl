@@ -36,13 +36,13 @@ from polygonetl.utils import rpc_response_to_result
 class ExportContractsJob(BaseJob):
     def __init__(
             self,
-            contract_addresses_iterable,
+            receipts_iterable,
             batch_size,
             batch_web3_provider,
             max_workers,
             item_exporter):
         self.batch_web3_provider = batch_web3_provider
-        self.contract_addresses_iterable = contract_addresses_iterable
+        self.receipts_iterable = receipts_iterable
 
         self.batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self.item_exporter = item_exporter
@@ -54,10 +54,10 @@ class ExportContractsJob(BaseJob):
         self.item_exporter.open()
 
     def _export(self):
-        self.batch_work_executor.execute(self.contract_addresses_iterable, self._export_contracts)
+        self.batch_work_executor.execute(self.receipts_iterable, self._export_contracts)
 
-    def _export_contracts(self, contract_addresses):
-        contracts_code_rpc = list(generate_get_code_json_rpc(contract_addresses))
+    def _export_contracts(self, receipts):
+        contracts_code_rpc = list(generate_get_code_json_rpc(receipts))
         response_batch = self.batch_web3_provider.make_batch_request(json.dumps(contracts_code_rpc))
 
         contracts = []
@@ -66,18 +66,20 @@ class ExportContractsJob(BaseJob):
             request_id = response['id']
             result = rpc_response_to_result(response)
 
-            contract_address = contract_addresses[request_id]
-            contract = self._get_contract(contract_address, result)
+            contract_address = receipts[request_id]['contract_address']
+            block_number = receipts[request_id]['block_number']
+            contract = self._get_contract(contract_address, block_number, result)
             contracts.append(contract)
 
         for contract in contracts:
             self.item_exporter.export_item(self.contract_mapper.contract_to_dict(contract))
 
-    def _get_contract(self, contract_address, rpc_result):
+    def _get_contract(self, contract_address, block_number, rpc_result):
         contract = self.contract_mapper.rpc_result_to_contract(contract_address, rpc_result)
         bytecode = contract.bytecode
         function_sighashes = self.contract_service.get_function_sighashes(bytecode)
 
+        contract.block_number = block_number
         contract.function_sighashes = function_sighashes
         contract.is_erc20 = self.contract_service.is_erc20_contract(function_sighashes)
         contract.is_erc721 = self.contract_service.is_erc721_contract(function_sighashes)
