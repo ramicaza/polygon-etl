@@ -1,3 +1,11 @@
+# The Fork
+This fork differs from the original polygon-etl repo in several significant ways.
+1. We are running this primarily for BSC (despite repo name lol)
+2. We forego using the debug/trace RPC api and instead use the getReceiptBlocks
+method to get receipts block-by-block (much faster but no internal transactions I believe)
+3. We use an improved export_contracts script that takes as input the receipts
+4. We've disabled many airflow DAGS like the partition and parse dags
+
 # Polygon-etl
 
 ## Overview
