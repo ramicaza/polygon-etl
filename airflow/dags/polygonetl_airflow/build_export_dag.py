@@ -15,6 +15,7 @@ from polygonetl.cli import (
     export_blocks_and_transactions,
     export_receipts_and_logs,
     extract_contracts,
+    export_contracts,
     extract_tokens,
     extract_token_transfers,
     export_geth_traces,
@@ -63,10 +64,11 @@ def build_export_dag(
     # export_genesis_traces_option = True
     export_blocks_and_transactions_toggle = True
     export_receipts_and_logs_toggle = True
-    extract_contracts_toggle = True
+    extract_contracts_toggle = False
+    export_contracts_toggle = True
     extract_tokens_toggle = True
     extract_token_transfers_toggle = True
-    export_traces_toggle = True
+    export_traces_toggle = False
     export_traces_from_gcs = False
 
     if export_max_active_runs is None:
@@ -187,6 +189,30 @@ def build_export_dag(
             copy_to_export_path(
                 os.path.join(tempdir, "contracts.json"), export_path("contracts", logical_date)
             )
+
+    # taken from old commit right before they switched to "extract_contracts"
+    # https://github.com/blockchain-etl/ethereum-etl-airflow/blob/8a5f8fdb31382bd90ef70ef85976c1955c8bab08/dags/ethereumetl_airflow/build_export_dag.py
+    def export_contracts_command(execution_date, provider_uri, **kwargs):
+        with TemporaryDirectory() as tempdir:
+            copy_from_export_path(
+                export_path("receipts", execution_date), os.path.join(tempdir, "receipts.csv")
+            )
+
+            logging.info('Calling export_contracts({}, ..., {}, {})'.format(
+                export_batch_size, export_max_workers, provider_uri
+            ))
+            export_contracts.callback(
+                batch_size=export_batch_size,
+                receipts=os.path.join(tempdir, "receipts.csv"),
+                output=os.path.join(tempdir, "contracts.json"),
+                max_workers=export_max_workers,
+                provider_uri=provider_uri,
+            )
+
+            copy_to_export_path(
+                os.path.join(tempdir, "contracts.json"), export_path("contracts", execution_date)
+            )
+
 
     def extract_tokens_command(logical_date, provider_uri, **kwargs):
         with TemporaryDirectory(dir=TEMP_DIR) as tempdir:
@@ -317,11 +343,23 @@ def build_export_dag(
         dependencies=[export_traces_operator],
     )
 
+    export_contracts_operator = add_export_task(
+        export_contracts_toggle,
+        "export_contracts",
+        add_provider_uri_fallback_loop(export_contracts_command, provider_uris),
+        dependencies=[export_receipts_and_logs_operator],
+    )
+
+    if not extract_contracts_toggle and export_contracts_toggle:
+        extract_tokens_deps = [export_contracts_operator]
+    else:
+        extract_tokens_deps = [extract_contracts_operator]
+
     extract_tokens_operator = add_export_task(
         extract_tokens_toggle,
         "extract_tokens",
         add_provider_uri_fallback_loop(extract_tokens_command, provider_uris),
-        dependencies=[extract_contracts_operator],
+        dependencies=extract_tokens_deps,
     )
 
     return dag
