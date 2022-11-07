@@ -9,4 +9,5 @@ if [ -z "${dag_gcs_prefix}" ]; then
     exit 1
 fi
 
+cp -r ../cli/polygonetl ./dags/
 gsutil -m cp -r dags/* ${dag_gcs_prefix}

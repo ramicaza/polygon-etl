@@ -1,7 +1,10 @@
-# Extra dependencies not included in Cloud Composer
-# During local dev & testing, you can `pip install -e ../cli` first
-# pip will then prioritise the local polygon-etl package over pypi
-
 discord-webhook==0.14.0
-eth-rlp==0.2.1             # Fixes install conflicts issue in Composer
-polygon-etl==0.2.1
+eth-rlp==0.2.1
+base58==2.1.1
+blockchain-etl-common==1.6.1
+click>=7.0
+eth-abi==1.3.0
+eth-utils==1.8.4
+ethereum-dasm==0.1.4
+requests>=2.23
+web3==4.7.2
