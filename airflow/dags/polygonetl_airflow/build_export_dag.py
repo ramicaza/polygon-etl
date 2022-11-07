@@ -59,8 +59,8 @@ def build_export_dag(
     if notification_emails and len(notification_emails) > 0:
         default_dag_args['email'] = [email.strip() for email in notification_emails.split(',')]
 
-    export_daofork_traces_option = False
-    export_genesis_traces_option = True
+    # export_daofork_traces_option = False
+    # export_genesis_traces_option = True
     export_blocks_and_transactions_toggle = True
     export_receipts_and_logs_toggle = True
     extract_contracts_toggle = True
@@ -244,7 +244,7 @@ def build_export_dag(
             export_traces_batch_size = 1
             logging.info('Calling export_geth_traces({}, {}, {}, ...,{}, {}, {}, {})'.format(
                 start_block, end_block, export_traces_batch_size, export_max_workers, provider_uri,
-                export_genesis_traces_option, export_daofork_traces_option
+                # export_genesis_traces_option, export_daofork_traces_option
             ))
 
             if not export_traces_from_gcs:
@@ -295,13 +295,13 @@ def build_export_dag(
     export_blocks_and_transactions_operator = add_export_task(
         export_blocks_and_transactions_toggle,
         "export_blocks_and_transactions",
-        add_provider_uri_fallback_loop(export_blocks_and_transactions_command, provider_uris),
+        add_provider_uri_fallback_loop(export_blocks_and_transactions_command, provider_uris_archival),
     )
 
     export_receipts_and_logs_operator = add_export_task(
         export_receipts_and_logs_toggle,
         "export_receipts_and_logs",
-        add_provider_uri_fallback_loop(export_receipts_and_logs_command, provider_uris),
+        add_provider_uri_fallback_loop(export_receipts_and_logs_command, provider_uris_archival),
         dependencies=[export_blocks_and_transactions_operator],
     )
 
