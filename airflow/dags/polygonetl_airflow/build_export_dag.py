@@ -149,26 +149,18 @@ def build_export_dag(
 
     def export_receipts_and_logs_command(logical_date, provider_uri, **kwargs):
         with TemporaryDirectory(dir=TEMP_DIR) as tempdir:
-            copy_from_export_path(
-                export_path("transactions", logical_date), os.path.join(tempdir, "transactions.csv")
-            )
+            start_block, end_block = get_block_range(tempdir, logical_date, provider_uri)
 
-            logging.info('Calling extract_csv_column(...)')
-            extract_csv_column.callback(
-                input=os.path.join(tempdir, "transactions.csv"),
-                output=os.path.join(tempdir, "transaction_hashes.txt"),
-                column="hash",
-            )
-
-            logging.info('Calling export_receipts_and_logs({}, ..., {}, {}, ...)'.format(
-                export_batch_size, provider_uri, export_max_workers))
+            logging.info('Calling export_receipts_and_logs({}, ..., {}, {}, {}, {} ...)'.format(
+                export_batch_size, provider_uri, export_max_workers, start_block, end_block))
             export_receipts_and_logs.callback(
                 batch_size=export_batch_size,
-                transaction_hashes=os.path.join(tempdir, "transaction_hashes.txt"),
                 provider_uri=provider_uri,
                 max_workers=export_max_workers,
                 receipts_output=os.path.join(tempdir, "receipts.csv"),
                 logs_output=os.path.join(tempdir, "logs.json"),
+                start_block=start_block,
+                end_block=end_block
             )
 
             copy_to_export_path(
