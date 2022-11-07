@@ -10,6 +10,7 @@ logging.getLogger().setLevel(logging.DEBUG)
 
 # When searching for DAGs, Airflow will only consider files where the string "airflow" and "DAG" both appear in the
 # contents of the .py file.
+"""
 DAG = build_verify_streaming_dag(
     dag_id='polygon_verify_streaming_dag',
     **read_verify_streaming_dag_vars(
@@ -17,3 +18,4 @@ DAG = build_verify_streaming_dag(
         max_lag_in_minutes=15,
     )
 )
+"""

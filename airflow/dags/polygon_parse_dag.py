@@ -12,7 +12,7 @@ table_definitions_folder = os.path.join(DAGS_FOLDER, 'resources/stages/parse/tab
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
-
+"""
 var_prefix = 'polygon_'
 
 for folder in glob(table_definitions_folder):
@@ -31,3 +31,4 @@ for folder in glob(table_definitions_folder):
             parse_schedule_interval='30 7 * * *'
         )
     )
+"""

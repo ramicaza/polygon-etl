@@ -9,6 +9,7 @@ logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
 
 # airflow DAG
+"""
 DAG = build_partition_dag(
     dag_id='polygon_partition_dag',
     load_dag_id='polygon_load_dag',
@@ -19,3 +20,4 @@ DAG = build_partition_dag(
         partition_schedule_interval="0 7 * * *",
     ),
 )
+"""
