@@ -35,8 +35,12 @@ logging_basic_config()
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-b', '--batch-size', default=100, show_default=True, type=int, help='The number of receipts to export at a time.')
-@click.option('-t', '--transaction-hashes', required=True, type=str,
+@click.option('-t', '--transaction-hashes', required=False, type=str,
               help='The file containing transaction hashes, one per line.')
+@click.option('-s', '--start-block', required=False, type=int,
+              help='The start block if using eth_getBlockReceipts')
+@click.option('-e', '--end-block', required=False, type=int,
+              help='The end block if using eth_getBlockReceipts')
 @click.option('-p', '--provider-uri', default='https://mainnet.infura.io', show_default=True, type=str,
               help='The URI of the web3 provider e.g. '
                    'file://$HOME/Library/Bor/geth.ipc or https://mainnet.infura.io')
@@ -47,17 +51,37 @@ logging_basic_config()
               help='The output file for receipt logs. '
                    'aIf not provided receipt logs will not be exported. Use "-" for stdout')
 @click.option('-c', '--chain', default='polygon', show_default=True, type=str, help='The chain network to connect to.')
-def export_receipts_and_logs(batch_size, transaction_hashes, provider_uri, max_workers, receipts_output, logs_output,
-                             chain='polygon'):
+def export_receipts_and_logs(batch_size, provider_uri, max_workers, receipts_output, logs_output,
+                             start_block=None, end_block=None, transaction_hashes=None, chain='polygon'):
     """Exports receipts and logs."""
-    with smart_open(transaction_hashes, 'r') as transaction_hashes_file:
+    using_blocks = start_block is not None and end_block is not None
+    using_hashes = transaction_hashes is not None
+    if not (using_blocks ^ using_hashes):
+        print("Error: You must pass EITHER a file of transaction hashes or a start & end block range")
+        return
+
+    if transaction_hashes:
+        with smart_open(transaction_hashes, 'r') as transaction_hashes_file:
+            job = ExportReceiptsJob(
+                transaction_hashes_iterable=(transaction_hash.strip() for transaction_hash in transaction_hashes_file),
+                start_block=start_block,
+                end_block=end_block,
+                batch_size=batch_size,
+                batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
+                max_workers=max_workers,
+                item_exporter=receipts_and_logs_item_exporter(receipts_output, logs_output),
+                export_receipts=receipts_output is not None,
+                export_logs=logs_output is not None)
+            job.run()
+    else:
         job = ExportReceiptsJob(
-            transaction_hashes_iterable=(transaction_hash.strip() for transaction_hash in transaction_hashes_file),
+            transaction_hashes_iterable=None,
+            start_block=start_block,
+            end_block=end_block,
             batch_size=batch_size,
             batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
             max_workers=max_workers,
             item_exporter=receipts_and_logs_item_exporter(receipts_output, logs_output),
             export_receipts=receipts_output is not None,
             export_logs=logs_output is not None)
-
         job.run()

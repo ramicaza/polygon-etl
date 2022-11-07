@@ -26,17 +26,19 @@ import logging
 
 from blockchainetl_common.jobs.base_job import BaseJob
 from polygonetl.executors.batch_work_executor import BatchWorkExecutor
-from polygonetl.json_rpc_requests import generate_get_receipt_json_rpc
+from polygonetl.json_rpc_requests import generate_get_receipt_json_rpc, generate_get_block_receipts_json_rpc
 from polygonetl.mappers.receipt_log_mapper import EthReceiptLogMapper
 from polygonetl.mappers.receipt_mapper import EthReceiptMapper
 from polygonetl.utils import rpc_response_batch_to_results
-
+# import time
 
 # Exports receipts and logs
 class ExportReceiptsJob(BaseJob):
     def __init__(
             self,
             transaction_hashes_iterable,
+            start_block,
+            end_block,
             batch_size,
             batch_web3_provider,
             max_workers,
@@ -45,6 +47,8 @@ class ExportReceiptsJob(BaseJob):
             export_logs=True):
         self.batch_web3_provider = batch_web3_provider
         self.transaction_hashes_iterable = transaction_hashes_iterable
+        self.start_block = start_block
+        self.end_block = end_block
 
         self.batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self.item_exporter = item_exporter
@@ -61,7 +65,25 @@ class ExportReceiptsJob(BaseJob):
         self.item_exporter.open()
 
     def _export(self):
-        self.batch_work_executor.execute(self.transaction_hashes_iterable, self._export_receipts)
+        if self.transaction_hashes_iterable:
+            self.batch_work_executor.execute(self.transaction_hashes_iterable, self._export_receipts)
+        else:
+            blocks = range(self.start_block, self.end_block + 1)
+            self.batch_work_executor.execute(blocks, self._export_receipts_by_block)
+        
+    def _export_receipts_by_block(self, block_numbers):
+        # start = time.time()
+        receipts_rpc = list(generate_get_block_receipts_json_rpc(block_numbers))
+        response = self.batch_web3_provider.make_batch_request(json.dumps(receipts_rpc))
+        batch_results = rpc_response_batch_to_results(response)
+        results = []
+        for br in batch_results:
+            results.extend(br)
+
+        receipts = [self.receipt_mapper.json_dict_to_receipt(result) for result in results]
+        for receipt in receipts:
+            self._export_receipt(receipt)
+        # print('end',time.time()- start)
 
     def _export_receipts(self, transaction_hashes):
         receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
