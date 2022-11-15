@@ -25,7 +25,7 @@ import json
 
 from polygonetl.executors.batch_work_executor import BatchWorkExecutor
 from blockchainetl_common.jobs.base_job import BaseJob
-from polygonetl.json_rpc_requests import generate_get_code_json_rpc
+from polygonetl.json_rpc_requests import generate_get_code_json_rpc, generate_supports_interface_json_rpc
 from polygonetl.mappers.contract_mapper import EthContractMapper
 
 from polygonetl.service.eth_contract_service import EthContractService
@@ -60,21 +60,30 @@ class ExportContractsJob(BaseJob):
         contracts_code_rpc = list(generate_get_code_json_rpc(receipts))
         response_batch = self.batch_web3_provider.make_batch_request(json.dumps(contracts_code_rpc))
 
+        supports_iface_rpc = list(generate_supports_interface_json_rpc(receipts))
+        if721_response_batch = self.batch_web3_provider.make_batch_request(json.dumps(supports_iface_rpc))
+        # convert ot id -> response
+        if721_response_batch = {response['id']: response for response in if721_response_batch}
+
         contracts = []
         for response in response_batch:
             # request id is the index of the contract address in contract_addresses list
             request_id = response['id']
             result = rpc_response_to_result(response)
+            is_iface721 = if721_response_batch[request_id]
+            is_iface721 = 'result' in is_iface721 and is_iface721['result'] == '0x' + '0' * 63 + '1'
+            if is_iface721:
+                print(receipts[request_id]['contract_address'])
 
             contract_address = receipts[request_id]['contract_address']
             block_number = receipts[request_id]['block_number']
-            contract = self._get_contract(contract_address, block_number, result)
+            contract = self._get_contract(contract_address, block_number, result, is_iface721)
             contracts.append(contract)
 
         for contract in contracts:
             self.item_exporter.export_item(self.contract_mapper.contract_to_dict(contract))
 
-    def _get_contract(self, contract_address, block_number, rpc_result):
+    def _get_contract(self, contract_address, block_number, rpc_result, is_iface721):
         contract = self.contract_mapper.rpc_result_to_contract(contract_address, rpc_result)
         bytecode = contract.bytecode
         function_sighashes = self.contract_service.get_function_sighashes(bytecode)
@@ -82,7 +91,7 @@ class ExportContractsJob(BaseJob):
         contract.block_number = block_number
         contract.function_sighashes = function_sighashes
         contract.is_erc20 = self.contract_service.is_erc20_contract(function_sighashes)
-        contract.is_erc721 = self.contract_service.is_erc721_contract(function_sighashes)
+        contract.is_erc721 = is_iface721 or self.contract_service.is_erc721_contract(function_sighashes)
 
         return contract
 

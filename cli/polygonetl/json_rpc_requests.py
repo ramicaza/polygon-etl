@@ -66,6 +66,18 @@ def generate_get_code_json_rpc(receipts, block='latest'):
             request_id=idx
         )
 
+# This is the encoded function call supportsInterface('0x80ac58cd': bytes4) which should return a bool
+SUPPORTS_IFACE_CALL_DATA = '0x01ffc9a780ac58cd00000000000000000000000000000000000000000000000000000000'
+def generate_supports_interface_json_rpc(receipts):
+    for idx, receipt in enumerate(receipts):
+        contract_address = receipt['contract_address']
+        # might be a less hacky way to encode the fxn data but save that for future iteration
+        yield generate_json_rpc(
+            method='eth_call',
+            params=[dict(to=contract_address, data=SUPPORTS_IFACE_CALL_DATA), 'latest'],
+            request_id=idx
+        )
+
 
 def generate_json_rpc(method, params, request_id=1):
     return {
