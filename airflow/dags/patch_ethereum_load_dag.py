@@ -15,6 +15,6 @@ DAG = build_patch_load_dag(
     blocks_dataset='bigquery-public-data.crypto_ethereum',
     **read_load_dag_vars(
         var_prefix='polygon_',
-        load_schedule_interval='0 7 * * *'
+        load_schedule_interval='0 9 * * *'
     )
 )

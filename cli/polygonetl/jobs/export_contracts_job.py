@@ -72,8 +72,6 @@ class ExportContractsJob(BaseJob):
             result = rpc_response_to_result(response)
             is_iface721 = if721_response_batch[request_id]
             is_iface721 = 'result' in is_iface721 and is_iface721['result'] == '0x' + '0' * 63 + '1'
-            if is_iface721:
-                print(receipts[request_id]['contract_address'])
 
             contract_address = receipts[request_id]['contract_address']
             block_number = receipts[request_id]['block_number']

@@ -15,6 +15,6 @@ DAG = build_patch_load_dag(
     blocks_dataset='public-data-finance.crypto_polygon',
     **read_load_dag_vars(
         var_prefix='polygon_',
-        load_schedule_interval='0 7 * * *'
+        load_schedule_interval='0 9 * * *'
     )
 )

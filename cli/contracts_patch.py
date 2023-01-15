@@ -75,7 +75,7 @@ WHERE DATE(block_timestamp)='{date.strftime("%Y-%m-%d")}';
 
 
 def main():
-    setup_pandas_gbq('./agave-pipeline-9ae294d3b02a.json')
+    # setup_pandas_gbq('./agave-pipeline-9ae294d3b02a.json')
 
     date_range = list(pd.date_range(args.start_date, args.end_date))
     with tqdm(total=len(date_range)) as pbar:

@@ -68,7 +68,7 @@ def build_patch_load_dag(
     output_bucket,
     checkpoint_bucket,
     destination_dataset_project_id,
-    chain='polygon',
+    chain,
     notification_emails=None,
     load_start_date=datetime(2018, 7, 1),
     load_schedule_interval='0 0 * * *',
